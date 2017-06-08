@@ -18,21 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def target_win32?
-  return true if ENV['OS'] == 'Windows_NT'
-  build.is_a?(MRuby::CrossBuild) && build.host_target.to_s =~ /mingw/
-end
+MRuby::Build.new do |conf|
+  toolchain ENV.fetch('CC', :gcc)
 
-MRuby::Gem::Specification.new('mruby-io') do |spec|
-  spec.license = 'MIT'
-  spec.authors = 'mruby developers'
+  conf.enable_debug
+  conf.enable_test
 
-  spec.add_test_dependency 'mruby-print',       core: 'mruby-print'
-  spec.add_test_dependency 'mruby-env',         mgem: 'mruby-env'
-  spec.add_test_dependency 'mruby-os',          mgem: 'mruby-os'
-
-  spec.cc.defines << 'HAVE_MRB_PROCESS_H'
-
-  ENV['RAND'] = Time.now.to_i.to_s if build.test_enabled?
-
+  conf.gem File.expand_path(File.dirname(__FILE__))
 end
