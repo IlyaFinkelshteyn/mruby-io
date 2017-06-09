@@ -35,4 +35,10 @@ MRuby::Gem::Specification.new('mruby-io') do |spec|
 
   ENV['RAND'] = Time.now.to_i.to_s if build.test_enabled?
 
+  if target_win32?
+    spec.objs.delete objfile("#{build_dir}/src/posix")
+  else
+    spec.objs.delete objfile("#{build_dir}/src/win32")
+  end
+
 end
