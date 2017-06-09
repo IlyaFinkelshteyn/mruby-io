@@ -47,6 +47,10 @@
 #include "mruby/error.h"
 #endif
 
+//TODO redundand
+int cloexec_open(mrb_state *mrb, const char *pathname, mrb_int flags, mrb_int mode);
+void fd_cloexec(mrb_state *mrb, int fd);
+
 
 
 
@@ -102,4 +106,64 @@ internal_sysopen(mrb_state *mrb)
   modenum = mrb_io_flags_to_modenum(mrb, flags);
   fd = cloexec_open(mrb, pat, modenum, perm);
   return mrb_fixnum_value(fd);
+}
+
+int
+cloexec_open(mrb_state *mrb, const char *pathname, mrb_int flags, mrb_int mode)
+{
+  mrb_value emsg;
+  int fd, retry = FALSE;
+
+#ifdef O_CLOEXEC
+  /* O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
+  flags |= O_CLOEXEC;
+#elif defined O_NOINHERIT
+  flags |= O_NOINHERIT;
+#endif
+reopen:
+  fd = open(pathname, flags, mode);
+  if (fd == -1) {
+    if (!retry) {
+      switch (errno) {
+        case ENFILE:
+        case EMFILE:
+        mrb_garbage_collect(mrb);
+        retry = TRUE;
+        goto reopen;
+      }
+    }
+
+    emsg = mrb_format(mrb, "open %S", mrb_str_new_cstr(mrb, pathname));
+    mrb_str_modify(mrb, mrb_str_ptr(emsg));
+    mrb_sys_fail(mrb, RSTRING_PTR(emsg));
+  }
+
+  if (fd <= 2) {
+    fd_cloexec(mrb, fd);
+  }
+  return fd;
+}
+
+void
+fd_cloexec(mrb_state *mrb, int fd)
+{
+#if defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
+  int flags, flags2;
+
+  flags = fcntl(fd, F_GETFD);
+  if (flags == -1) {
+    mrb_sys_fail(mrb, "fcntl");
+  }
+  if (fd <= 2) {
+    flags2 = flags & ~FD_CLOEXEC; /* Clear CLOEXEC for standard file descriptors: 0, 1, 2. */
+  }
+  else {
+    flags2 = flags | FD_CLOEXEC; /* Set CLOEXEC for non-standard file descriptors: 3, 4, 5, ... */
+  }
+  if (flags != flags2) {
+    if (fcntl(fd, F_SETFD, flags2) == -1) {
+      mrb_sys_fail(mrb, "fcntl");
+    }
+  }
+#endif
 }
