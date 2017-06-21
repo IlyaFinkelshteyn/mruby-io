@@ -43,7 +43,7 @@ environment:
 
 matrix:
   allow_failures:
-  - CC: visualcpp
+  - CC: visualcpp#
   exclude:
   - CC: visualcpp
   - CFLAGS: -m32
@@ -54,7 +54,7 @@ init:
 - SET PATH=C:\Ruby23-x64\bin;%PATH%
 - SET PATH=C:\cygwin\bin;%PATH%
 - gcc --version
-- tree C:/MinGW/
+- tree C:/
 
 build_script:
 - rake compile
