@@ -54,7 +54,6 @@ init:
 - SET PATH=C:\Ruby23-x64\bin;%PATH%
 - SET PATH=C:\cygwin\bin;%PATH%
 - gcc --version
-- tree C:/
 
 build_script:
 - rake compile
