@@ -23,7 +23,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__APPLE__) && !defined(__linux__)
   #define NULL_FILE "NUL"
   #define UNLINK _unlink
   #define GETCWD _getcwd
@@ -48,7 +48,7 @@
 
 #define FILE_SEPARATOR "/"
 
-#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__APPLE__) && !defined(__linux__)
   #define PATH_SEPARATOR ";"
   #define FILE_ALT_SEPARATOR "\\"
 #else
@@ -74,7 +74,7 @@
 mrb_value
 mrb_file_s_umask(mrb_state *mrb, mrb_value klass)
 {
-#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__APPLE__) && !defined(__linux__)
   /* nothing to do on windows */
   return mrb_fixnum_value(0);
 
@@ -130,7 +130,7 @@ mrb_file_s_rename(mrb_state *mrb, mrb_value obj)
 static mrb_value
 mrb_file_dirname(mrb_state *mrb, mrb_value klass)
 {
-#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__APPLE__) && !defined(__linux__)
   char dname[_MAX_DIR], vname[_MAX_DRIVE];
   char buffer[_MAX_DRIVE + _MAX_DIR];
   char *path;
@@ -167,7 +167,7 @@ mrb_file_dirname(mrb_state *mrb, mrb_value klass)
 static mrb_value
 mrb_file_basename(mrb_state *mrb, mrb_value klass)
 {
-#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__APPLE__) && !defined(__linux__)
   char bname[_MAX_DIR];
   char extname[_MAX_EXT];
   char *path;
@@ -281,7 +281,7 @@ mrb_file__gethome(mrb_state *mrb, mrb_value klass)
 mrb_value
 mrb_file_flock(mrb_state *mrb, mrb_value self)
 {
-#if defined(_WIN32) || defined(_WIN64) || defined(sun)
+#if !defined(__APPLE__) && !defined(__linux__) || defined(sun)
   mrb_raise(mrb, E_NOTIMP_ERROR, "flock is not supported on Illumos/Solaris/Windows");
 #else
   mrb_int operation;
@@ -315,7 +315,7 @@ mrb_file_flock(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_file_s_symlink(mrb_state *mrb, mrb_value klass)
 {
-#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__APPLE__) && !defined(__linux__)
   mrb_raise(mrb, E_NOTIMP_ERROR, "symlink is not supported on this platform");
 #else
   mrb_value from, to;
@@ -355,7 +355,7 @@ mrb_file_s_chmod(mrb_state *mrb, mrb_value klass) {
 
 static mrb_value
 mrb_file_s_readlink(mrb_state *mrb, mrb_value klass) {
-#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__APPLE__) && !defined(__linux__)
   mrb_raise(mrb, E_NOTIMP_ERROR, "readlink is not supported on this platform");
   return mrb_nil_value(); // unreachable
 #else
@@ -415,7 +415,7 @@ mrb_init_file(mrb_state *mrb)
   mrb_define_const(mrb, cnst, "LOCK_NB", mrb_fixnum_value(LOCK_NB));
   mrb_define_const(mrb, cnst, "SEPARATOR", mrb_str_new_cstr(mrb, FILE_SEPARATOR));
   mrb_define_const(mrb, cnst, "PATH_SEPARATOR", mrb_str_new_cstr(mrb, PATH_SEPARATOR));
-#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__APPLE__) && !defined(__linux__)
   mrb_define_const(mrb, cnst, "ALT_SEPARATOR", mrb_str_new_cstr(mrb, FILE_ALT_SEPARATOR));
 #else
   mrb_define_const(mrb, cnst, "ALT_SEPARATOR", mrb_nil_value());

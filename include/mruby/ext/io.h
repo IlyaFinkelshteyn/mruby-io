@@ -31,6 +31,22 @@ struct mrb_io {
 
 mrb_value mrb_io_fileno(mrb_state *mrb, mrb_value io);
 
+#if !defined(__APPLE__) && !defined(__linux__)
+off_t lseek(int fd, mrb_int offset, mrb_int whence);
+off_t close(int fd);
+off_t isatty(int fd);
+off_t read(int fd, char *buf, mrb_int whence);
+off_t write(int fd, char *buf, mrb_int whence);
+#else
+mrb_value internal_sysopen(mrb_state *mrb);
+static int mrb_io_modestr_to_flags(mrb_state *mrb, const char *modestr);
+static int mrb_io_flags_to_modenum(mrb_state *mrb, int flags);
+int cloexec_open(mrb_state *mrb, const char *pathname, mrb_int flags, mrb_int mode);
+void fd_cloexec(mrb_state *mrb, int fd);
+#endif
+
+
+
 #if defined(__cplusplus)
 } /* extern "C" { */
 #endif

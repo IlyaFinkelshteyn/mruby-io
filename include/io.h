@@ -31,11 +31,9 @@ extern "C" {
 #include <sys/types.h>
 
 
-mrb_value internal_sysopen(mrb_state *mrb);
-static int mrb_io_modestr_to_flags(mrb_state *mrb, const char *modestr);
-static int mrb_io_flags_to_modenum(mrb_state *mrb, int flags);
-int cloexec_open(mrb_state *mrb, const char *pathname, mrb_int flags, mrb_int mode);
-void fd_cloexec(mrb_state *mrb, int fd);
+
+
+
 
 
 

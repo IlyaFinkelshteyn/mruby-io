@@ -13,6 +13,15 @@
 #include "mruby/variable.h"
 #include "mruby/ext/io.h"
 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <share.h>
+
 //#include "internal.c"
 
 #if MRUBY_RELEASE_NO < 10000
@@ -21,26 +30,21 @@
 #include "mruby/error.h"
 #endif
 
-#include <sys/types.h>
-#include <sys/stat.h>
 
-#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__APPLE__) && !defined(__linux__)
   #include <winsock.h>
+  #include <windows.h>
   #include <io.h>
-  #define open  _open
-  #define close _close
-  #define read  _read
-  #define write _write
-  #define lseek _lseek
+  // #define open  _open
+  // #define close _close
+  // #define read  _read
+  // #define write _write
+  // #define lseek _lseek
 #else
   #include <sys/wait.h>
   #include <unistd.h>
 #endif
 
-#include <fcntl.h>
-
-#include <errno.h>
-#include <stdio.h>
 #include <string.h>
 
 
@@ -73,7 +77,10 @@ io_get_open_fptr(mrb_state *mrb, mrb_value self)
   return fptr;
 }
 
-#if !defined(_WIN32) && !defined(_WIN64)
+#if defined(__APPLE__) || defined(__linux__)
+
+
+#if defined(__APPLE__) || defined(__linux__)
 static void
 io_set_process_status(mrb_state *mrb, pid_t pid, int status)
 {
@@ -96,78 +103,7 @@ io_set_process_status(mrb_state *mrb, pid_t pid, int status)
 }
 #endif
 
-static int
-mrb_io_modestr_to_flags(mrb_state *mrb, const char *mode)
-{
-  int flags = 0;
-  const char *m = mode;
 
-  switch (*m++) {
-    case 'r':
-      flags |= FMODE_READABLE;
-      break;
-    case 'w':
-      flags |= FMODE_WRITABLE | FMODE_CREATE | FMODE_TRUNC;
-      break;
-    case 'a':
-      flags |= FMODE_WRITABLE | FMODE_APPEND | FMODE_CREATE;
-      break;
-    default:
-      mrb_raisef(mrb, E_ARGUMENT_ERROR, "illegal access mode %S", mrb_str_new_cstr(mrb, mode));
-  }
-
-  while (*m) {
-    switch (*m++) {
-      case 'b':
-        flags |= FMODE_BINMODE;
-        break;
-      case '+':
-        flags |= FMODE_READWRITE;
-        break;
-      case ':':
-        /* XXX: PASSTHROUGH*/
-      default:
-        mrb_raisef(mrb, E_ARGUMENT_ERROR, "illegal access mode %S", mrb_str_new_cstr(mrb, mode));
-    }
-  }
-
-  return flags;
-}
-
-static int
-mrb_io_flags_to_modenum(mrb_state *mrb, int flags)
-{
-  int modenum = 0;
-
-  switch(flags & (FMODE_READABLE|FMODE_WRITABLE|FMODE_READWRITE)) {
-    case FMODE_READABLE:
-      modenum = O_RDONLY;
-      break;
-    case FMODE_WRITABLE:
-      modenum = O_WRONLY;
-      break;
-    case FMODE_READWRITE:
-      modenum = O_RDWR;
-      break;
-  }
-
-  if (flags & FMODE_APPEND) {
-    modenum |= O_APPEND;
-  }
-  if (flags & FMODE_TRUNC) {
-    modenum |= O_TRUNC;
-  }
-  if (flags & FMODE_CREATE) {
-    modenum |= O_CREAT;
-  }
-#ifdef O_BINARY
-  if (flags & FMODE_BINMODE) {
-    modenum |= O_BINARY;
-  }
-#endif
-
-  return modenum;
-}
 
 void
 mrb_fd_cloexec(mrb_state *mrb, int fd)
@@ -220,16 +156,6 @@ mrb_proc_exec(const char *pname)
   return -1;
 }
 #endif
-
-static void
-mrb_io_free(mrb_state *mrb, void *ptr)
-{
-  struct mrb_io *io = (struct mrb_io *)ptr;
-  if (io != NULL) {
-    fptr_finalize(mrb, io, TRUE);
-    mrb_free(mrb, io);
-  }
-}
 
 static struct mrb_io *
 mrb_io_alloc(mrb_state *mrb)
@@ -448,51 +374,6 @@ mrb_io_initialize(mrb_state *mrb, mrb_value io)
   return io;
 }
 
-static void
-fptr_finalize(mrb_state *mrb, struct mrb_io *fptr, int quiet)
-{
-  int saved_errno = 0;
-
-  if (fptr == NULL) {
-    return;
-  }
-
-  if (fptr->fd > 2) {
-    if (close(fptr->fd) == -1) {
-      saved_errno = errno;
-    }
-    fptr->fd = -1;
-  }
-
-  if (fptr->fd2 > 2) {
-    if (close(fptr->fd2) == -1) {
-      if (saved_errno == 0) {
-        saved_errno = errno;
-      }
-    }
-    fptr->fd2 = -1;
-  }
-
-#if !defined(_WIN32) && !defined(_WIN64)
-  if (fptr->pid != 0) {
-    pid_t pid;
-    int status;
-    do {
-      pid = waitpid(fptr->pid, &status, 0);
-    } while (pid == -1 && errno == EINTR);
-    if (!quiet && pid == fptr->pid) {
-      io_set_process_status(mrb, pid, status);
-    }
-    fptr->pid = 0;
-    /* Note: we don't raise an exception when waitpid(3) fails */
-  }
-#endif
-
-  if (!quiet && saved_errno != 0) {
-    errno = saved_errno;
-    mrb_sys_fail(mrb, "fptr_finalize failed.");
-  }
-}
 
 mrb_value
 mrb_io_check_readable(mrb_state *mrb, mrb_value self)
@@ -504,16 +385,7 @@ mrb_io_check_readable(mrb_state *mrb, mrb_value self)
   return mrb_nil_value();
 }
 
-mrb_value
-mrb_io_isatty(mrb_state *mrb, mrb_value self)
-{
-  struct mrb_io *fptr;
 
-  fptr = io_get_open_fptr(mrb, self);
-  if (isatty(fptr->fd) == 0)
-    return mrb_false_value();
-  return mrb_true_value();
-}
 
 mrb_value
 mrb_io_s_for_fd(mrb_state *mrb, mrb_value klass)
@@ -956,13 +828,7 @@ retry:
   return result;
 }
 
-mrb_value
-mrb_io_fileno(mrb_state *mrb, mrb_value io)
-{
-  struct mrb_io *fptr;
-  fptr = (struct mrb_io *)mrb_get_datatype(mrb, io, &mrb_io_type);
-  return mrb_fixnum_value(fptr->fd);
-}
+
 
 mrb_value
 mrb_io_close_on_exec_p(mrb_state *mrb, mrb_value self)
@@ -1044,6 +910,156 @@ mrb_io_sync(mrb_state *mrb, mrb_value self)
   return mrb_bool_value(fptr->sync);
 }
 
+#endif //heres the end of deactivate everything for windows
+
+mrb_value
+mrb_io_isatty(mrb_state *mrb, mrb_value self)
+{
+  struct mrb_io *fptr;
+
+  fptr = io_get_open_fptr(mrb, self);
+  if (isatty(fptr->fd) == 0)
+    return mrb_false_value();
+  return mrb_true_value();
+}
+
+mrb_value
+mrb_io_fileno(mrb_state *mrb, mrb_value io)
+{
+  struct mrb_io *fptr;
+  fptr = (struct mrb_io *)mrb_get_datatype(mrb, io, &mrb_io_type);
+  return mrb_fixnum_value(fptr->fd);
+}
+
+static int
+mrb_io_modestr_to_flags(mrb_state *mrb, const char *mode)
+{
+  int flags = 0;
+  const char *m = mode;
+
+  switch (*m++) {
+    case 'r':
+      flags |= FMODE_READABLE;
+      break;
+    case 'w':
+      flags |= FMODE_WRITABLE | FMODE_CREATE | FMODE_TRUNC;
+      break;
+    case 'a':
+      flags |= FMODE_WRITABLE | FMODE_APPEND | FMODE_CREATE;
+      break;
+    default:
+      mrb_raisef(mrb, E_ARGUMENT_ERROR, "illegal access mode %S", mrb_str_new_cstr(mrb, mode));
+  }
+
+  while (*m) {
+    switch (*m++) {
+      case 'b':
+        flags |= FMODE_BINMODE;
+        break;
+      case '+':
+        flags |= FMODE_READWRITE;
+        break;
+      case ':':
+        /* XXX: PASSTHROUGH*/
+      default:
+        mrb_raisef(mrb, E_ARGUMENT_ERROR, "illegal access mode %S", mrb_str_new_cstr(mrb, mode));
+    }
+  }
+
+  return flags;
+}
+
+static int
+mrb_io_flags_to_modenum(mrb_state *mrb, int flags)
+{
+  int modenum = 0;
+
+  switch(flags & (FMODE_READABLE|FMODE_WRITABLE|FMODE_READWRITE)) {
+    case FMODE_READABLE:
+      modenum = O_RDONLY;
+      break;
+    case FMODE_WRITABLE:
+      modenum = O_WRONLY;
+      break;
+    case FMODE_READWRITE:
+      modenum = O_RDWR;
+      break;
+  }
+
+  if (flags & FMODE_APPEND) {
+    modenum |= O_APPEND;
+  }
+  if (flags & FMODE_TRUNC) {
+    modenum |= O_TRUNC;
+  }
+  if (flags & FMODE_CREATE) {
+    modenum |= O_CREAT;
+  }
+#ifdef O_BINARY
+  if (flags & FMODE_BINMODE) {
+    modenum |= O_BINARY;
+  }
+#endif
+
+  return modenum;
+}
+
+static void
+fptr_finalize(mrb_state *mrb, struct mrb_io *fptr, int quiet)
+{
+  int saved_errno = 0;
+
+  if (fptr == NULL) {
+    return;
+  }
+
+  if (fptr->fd > 2) {
+    if (close(fptr->fd) == -1) {
+      saved_errno = errno;
+    }
+    fptr->fd = -1;
+  }
+
+  if (fptr->fd2 > 2) {
+    if (close(fptr->fd2) == -1) {
+      if (saved_errno == 0) {
+        saved_errno = errno;
+      }
+    }
+    fptr->fd2 = -1;
+  }
+
+#if !defined(_WIN32) && !defined(_WIN64)
+  if (fptr->pid != 0) {
+    pid_t pid;
+    int status;
+    do {
+      pid = waitpid(fptr->pid, &status, 0);
+    } while (pid == -1 && errno == EINTR);
+    if (!quiet && pid == fptr->pid) {
+      io_set_process_status(mrb, pid, status);
+    }
+    fptr->pid = 0;
+    /* Note: we don't raise an exception when waitpid(3) fails */
+  }
+#endif
+
+  if (!quiet && saved_errno != 0) {
+    errno = saved_errno;
+    mrb_sys_fail(mrb, "fptr_finalize failed.");
+  }
+}
+
+static void
+mrb_io_free(mrb_state *mrb, void *ptr)
+{
+  struct mrb_io *io = (struct mrb_io *)ptr;
+  if (io != NULL) {
+    fptr_finalize(mrb, io, TRUE);
+    mrb_free(mrb, io);
+  }
+}
+
 void
 mrb_init_io(mrb_state *mrb)
 {
@@ -1053,20 +1069,18 @@ mrb_init_io(mrb_state *mrb)
   MRB_SET_INSTANCE_TT(io, MRB_TT_DATA);
 
   mrb_include_module(mrb, io, mrb_module_get(mrb, "Enumerable")); /* 15.2.20.3 */
-#ifndef _WIN32
+#if defined(__APPLE__) || defined(__linux__)
+#if defined(__APPLE__) || defined(__linux__)
   mrb_define_class_method(mrb, io, "_popen",  mrb_io_s_popen,   MRB_ARGS_ANY());
   mrb_define_class_method(mrb, io, "_sysclose",  mrb_io_s_sysclose, MRB_ARGS_REQ(1));
+  mrb_define_class_method(mrb, io, "_pipe", mrb_io_s_pipe, MRB_ARGS_NONE());
 #endif
   mrb_define_class_method(mrb, io, "for_fd",  mrb_io_s_for_fd,   MRB_ARGS_ANY());
   mrb_define_class_method(mrb, io, "select",  mrb_io_s_select,  MRB_ARGS_ANY());
   mrb_define_class_method(mrb, io, "sysopen", mrb_io_s_sysopen, MRB_ARGS_ANY());
-#ifndef _WIN32
-  mrb_define_class_method(mrb, io, "_pipe", mrb_io_s_pipe, MRB_ARGS_NONE());
-#endif
 
   mrb_define_method(mrb, io, "initialize", mrb_io_initialize, MRB_ARGS_ANY());    /* 15.2.20.5.21 (x)*/
   mrb_define_method(mrb, io, "_check_readable", mrb_io_check_readable, MRB_ARGS_NONE());
-  mrb_define_method(mrb, io, "isatty",     mrb_io_isatty,     MRB_ARGS_NONE());
   mrb_define_method(mrb, io, "sync",       mrb_io_sync,       MRB_ARGS_NONE());
   mrb_define_method(mrb, io, "sync=",      mrb_io_set_sync,   MRB_ARGS_REQ(1));
   mrb_define_method(mrb, io, "sysread",    mrb_io_sysread,    MRB_ARGS_ANY());
@@ -1077,8 +1091,9 @@ mrb_init_io(mrb_state *mrb)
   mrb_define_method(mrb, io, "close_on_exec?", mrb_io_close_on_exec_p,   MRB_ARGS_NONE());
   mrb_define_method(mrb, io, "closed?",    mrb_io_closed,     MRB_ARGS_NONE());   /* 15.2.20.5.2 */
   mrb_define_method(mrb, io, "pid",        mrb_io_pid,        MRB_ARGS_NONE());   /* 15.2.20.5.2 */
+#endif
+
+  mrb_define_method(mrb, io, "isatty",     mrb_io_isatty,     MRB_ARGS_NONE());
   mrb_define_method(mrb, io, "fileno",     mrb_io_fileno,     MRB_ARGS_NONE());
-
-
   mrb_gv_set(mrb, mrb_intern_cstr(mrb, "$/"), mrb_str_new_cstr(mrb, "\n"));
 }

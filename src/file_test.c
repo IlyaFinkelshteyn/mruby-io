@@ -17,7 +17,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__APPLE__) && !defined(__linux__)
   #define LSTAT stat
   #include <winsock.h>
 #else
@@ -128,7 +128,7 @@ mrb_filetest_s_directory_p(mrb_state *mrb, mrb_value klass)
 mrb_value
 mrb_filetest_s_pipe_p(mrb_state *mrb, mrb_value klass)
 {
-#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__APPLE__) && !defined(__linux__)
   mrb_raise(mrb, E_NOTIMP_ERROR, "pipe is not supported on this platform");
 #else
 #ifdef S_IFIFO
@@ -161,7 +161,7 @@ mrb_filetest_s_pipe_p(mrb_state *mrb, mrb_value klass)
 mrb_value
 mrb_filetest_s_symlink_p(mrb_state *mrb, mrb_value klass)
 {
-#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__APPLE__) && !defined(__linux__)
   mrb_raise(mrb, E_NOTIMP_ERROR, "symlink is not supported on this platform");
 #else
 #ifndef S_ISLNK
@@ -204,7 +204,7 @@ mrb_filetest_s_symlink_p(mrb_state *mrb, mrb_value klass)
 mrb_value
 mrb_filetest_s_socket_p(mrb_state *mrb, mrb_value klass)
 {
-#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__APPLE__) && !defined(__linux__)
   mrb_raise(mrb, E_NOTIMP_ERROR, "socket is not supported on this platform");
 #else
 #ifndef S_ISSOCK

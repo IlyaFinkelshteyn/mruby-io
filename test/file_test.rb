@@ -1,11 +1,19 @@
 ##
 # FileTest
 
-assert('FileTest TEST SETUP') do
+def assert_not_windows(*args, &block)
+  assert(*args, &block) if OS.posix?
+end
+
+def assert_windows(*args, &block)
+  assert(*args, &block) if OS.windows?
+end
+
+assert_not_windows('FileTest TEST SETUP') do
   MRubyIOTestUtil.io_test_setup
 end
 
-assert("FileTest.directory?") do
+assert_not_windows("FileTest.directory?") do
   dir = MRubyIOTestUtil.mkdtemp("mruby-io-test.XXXXXX")
   begin
     assert_true  FileTest.directory?(dir)
@@ -15,7 +23,7 @@ assert("FileTest.directory?") do
   end
 end
 
-assert("FileTest.exist?") do
+assert_not_windows("FileTest.exist?") do
   assert_equal true,  FileTest.exist?($mrbtest_io_rfname), "filename - exist"
   assert_equal false, FileTest.exist?($mrbtest_io_rfname + "-"), "filename - not exist"
   io = IO.new(IO.sysopen($mrbtest_io_rfname))
@@ -27,7 +35,7 @@ assert("FileTest.exist?") do
   end
 end
 
-assert("FileTest.file?") do
+assert_not_windows("FileTest.file?") do
   dir = MRubyIOTestUtil.mkdtemp("mruby-io-test.XXXXXX")
   begin
     assert_true  FileTest.file?($mrbtest_io_rfname)
@@ -37,7 +45,7 @@ assert("FileTest.file?") do
   end
 end
 
-assert("FileTest.pipe?") do
+assert_not_windows("FileTest.pipe?") do
   begin
     assert_equal false, FileTest.pipe?("/tmp")
     io = IO.popen("ls")
@@ -47,12 +55,12 @@ assert("FileTest.pipe?") do
   end
 end
 
-assert('FileTest.size') do
+assert_not_windows('FileTest.size') do
   assert_equal FileTest.size($mrbtest_io_rfname), $mrbtest_io_msg.size
   assert_equal FileTest.size($mrbtest_io_wfname), 0
 end
 
-assert("FileTest.size?") do
+assert_not_windows("FileTest.size?") do
   assert_equal $mrbtest_io_msg.size, FileTest.size?($mrbtest_io_rfname)
   assert_equal nil, FileTest.size?($mrbtest_io_wfname)
   assert_equal nil, FileTest.size?("not-exist-test-target-file")
@@ -74,7 +82,7 @@ assert("FileTest.size?") do
   fp1.closed? && fp2.closed?
 end
 
-assert("FileTest.socket?") do
+assert_not_windows("FileTest.socket?") do
   begin
     assert_true FileTest.socket?($mrbtest_io_socketname)
   rescue NotImplementedError => e
@@ -82,7 +90,7 @@ assert("FileTest.socket?") do
   end
 end
 
-assert("FileTest.symlink?") do
+assert_not_windows("FileTest.symlink?") do
   begin
     assert_true FileTest.symlink?($mrbtest_io_symlinkname)
   rescue NotImplementedError => e
@@ -90,7 +98,7 @@ assert("FileTest.symlink?") do
   end
 end
 
-assert("FileTest.zero?") do
+assert_not_windows("FileTest.zero?") do
   assert_equal false, FileTest.zero?($mrbtest_io_rfname)
   assert_equal true,  FileTest.zero?($mrbtest_io_wfname)
   assert_equal false, FileTest.zero?("not-exist-test-target-file")
@@ -112,6 +120,6 @@ assert("FileTest.zero?") do
   fp1.closed? && fp2.closed?
 end
 
-assert('FileTest TEST CLEANUP') do
+assert_not_windows('FileTest TEST CLEANUP') do
   assert_nil MRubyIOTestUtil.io_test_cleanup
 end

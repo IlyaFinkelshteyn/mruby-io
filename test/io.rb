@@ -1,4 +1,4 @@
-##
+#
 # IO Test
 
 unless Object.respond_to? :assert_nothing_raised
@@ -21,23 +21,31 @@ unless Object.respond_to? :assert_nothing_raised
   end
 end
 
-assert('IO TEST SETUP') do
+def assert_not_windows(*args, &block)
+  assert(*args, &block) if OS.posix?
+end
+
+def assert_windows(*args, &block)
+  assert(*args, &block) if OS.windows?
+end
+
+assert_not_windows('IO TEST SETUP') do
   MRubyIOTestUtil.io_test_setup
 end
 
-assert('IO', '15.2.20') do
+assert_not_windows('IO', '15.2.20') do
   assert_equal(Class, IO.class)
 end
 
-assert('IO', '15.2.20.2') do
+assert_not_windows('IO', '15.2.20.2') do
   assert_equal(Object, IO.superclass)
 end
 
-assert('IO', '15.2.20.3') do
+assert_not_windows('IO', '15.2.20.3') do
   assert_include(IO.included_modules, Enumerable)
 end
 
-assert('IO.open', '15.2.20.4.1') do
+assert_not_windows('IO.open', '15.2.20.4.1') do
   fd = IO.sysopen $mrbtest_io_rfname
   assert_equal Fixnum, fd.class
   io = IO.open fd
@@ -53,23 +61,23 @@ assert('IO.open', '15.2.20.4.1') do
   true
 end
 
-assert('IO#close', '15.2.20.5.1') do
+assert_not_windows('IO#close', '15.2.20.5.1') do
   io = IO.new(IO.sysopen($mrbtest_io_rfname))
   assert_nil io.close
 end
 
-assert('IO#closed?', '15.2.20.5.2') do
+assert_not_windows('IO#closed?', '15.2.20.5.2') do
   io = IO.new(IO.sysopen($mrbtest_io_rfname))
   assert_false io.closed?
   io.close
   assert_true io.closed?
 end
 
-#assert('IO#each', '15.2.20.5.3') do
-#assert('IO#each_byte', '15.2.20.5.4') do
-#assert('IO#each_line', '15.2.20.5.5') do
+#assert_not_windows('IO#each', '15.2.20.5.3') do
+#assert_not_windows('IO#each_byte', '15.2.20.5.4') do
+#assert_not_windows('IO#each_line', '15.2.20.5.5') do
 
-assert('IO#eof?', '15.2.20.5.6') do
+assert_not_windows('IO#eof?', '15.2.20.5.6') do
   io = IO.new(IO.sysopen($mrbtest_io_wfname, 'w'), 'w')
   assert_raise(IOError) do
     io.eof?
@@ -95,7 +103,7 @@ assert('IO#eof?', '15.2.20.5.6') do
   true
 end
 
-assert('IO#flush', '15.2.20.5.7') do
+assert_not_windows('IO#flush', '15.2.20.5.7') do
   # Note: mruby-io does not have any buffer to be flushed now.
   io = IO.new(IO.sysopen($mrbtest_io_wfname))
   assert_equal io, io.flush
@@ -105,7 +113,7 @@ assert('IO#flush', '15.2.20.5.7') do
   end
 end
 
-assert('IO#getc', '15.2.20.5.8') do
+assert_not_windows('IO#getc', '15.2.20.5.8') do
   io = IO.new(IO.sysopen($mrbtest_io_rfname))
   $mrbtest_io_msg.each_char { |ch|
     assert_equal ch, io.getc
@@ -115,13 +123,13 @@ assert('IO#getc', '15.2.20.5.8') do
   true
 end
 
-#assert('IO#gets', '15.2.20.5.9') do
-#assert('IO#initialize_copy', '15.2.20.5.10') do
-#assert('IO#print', '15.2.20.5.11') do
-#assert('IO#putc', '15.2.20.5.12') do
-#assert('IO#puts', '15.2.20.5.13') do
+#assert_not_windows('IO#gets', '15.2.20.5.9') do
+#assert_not_windows('IO#initialize_copy', '15.2.20.5.10') do
+#assert_not_windows('IO#print', '15.2.20.5.11') do
+#assert_not_windows('IO#putc', '15.2.20.5.12') do
+#assert_not_windows('IO#puts', '15.2.20.5.13') do
 
-assert('IO#read', '15.2.20.5.14') do
+assert_not_windows('IO#read', '15.2.20.5.14') do
   IO.open(IO.sysopen($mrbtest_io_rfname)) do |io|
     assert_raise(ArgumentError) { io.read(-5) }
     assert_raise(TypeError) { io.read("str") }
@@ -140,7 +148,7 @@ assert('IO#read', '15.2.20.5.14') do
   end
 end
 
-assert('IO#readchar', '15.2.20.5.15') do
+assert_not_windows('IO#readchar', '15.2.20.5.15') do
   # almost same as IO#getc
   IO.open(IO.sysopen($mrbtest_io_rfname)) do |io|
     $mrbtest_io_msg.each_char { |ch|
@@ -152,10 +160,10 @@ assert('IO#readchar', '15.2.20.5.15') do
   end
 end
 
-#assert('IO#readline', '15.2.20.5.16') do
-#assert('IO#readlines', '15.2.20.5.17') do
+#assert_not_windows('IO#readline', '15.2.20.5.16') do
+#assert_not_windows('IO#readlines', '15.2.20.5.17') do
 
-assert('IO#sync', '15.2.20.5.18') do
+assert_not_windows('IO#sync', '15.2.20.5.18') do
   io = IO.new(IO.sysopen($mrbtest_io_rfname))
   s = io.sync
   assert_true(s == true || s == false)
@@ -165,7 +173,7 @@ assert('IO#sync', '15.2.20.5.18') do
   end
 end
 
-assert('IO#sync=', '15.2.20.5.19') do
+assert_not_windows('IO#sync=', '15.2.20.5.19') do
   io = IO.new(IO.sysopen($mrbtest_io_rfname))
   io.sync = true
   assert_true io.sync
@@ -177,14 +185,14 @@ assert('IO#sync=', '15.2.20.5.19') do
   end
 end
 
-assert('IO#write', '15.2.20.5.20') do
+assert_not_windows('IO#write', '15.2.20.5.20') do
   io = IO.open(IO.sysopen($mrbtest_io_wfname))
   assert_equal 0, io.write("")
   io.close
   true
 end
 
-assert('IO#<<') do
+assert_not_windows('IO#<<') do
   io = IO.open(IO.sysopen($mrbtest_io_wfname))
   io << "" << ""
   assert_equal 0, io.pos
@@ -192,7 +200,7 @@ assert('IO#<<') do
   true
 end
 
-assert('IO.for_fd') do
+assert_not_windows('IO.for_fd') do
   fd = IO.sysopen($mrbtest_io_rfname)
   io = IO.for_fd(fd)
     assert_equal $mrbtest_io_msg, io.read
@@ -200,17 +208,17 @@ assert('IO.for_fd') do
   true
 end
 
-assert('IO.new') do
+assert_not_windows('IO.new') do
   io = IO.new(0)
   io.close
   true
 end
 
-assert('IO gc check') do
+assert_not_windows('IO gc check') do
   100.times { IO.new(0) }
 end
 
-assert('IO.sysopen("./nonexistent")') do
+assert_not_windows('IO.sysopen("./nonexistent")') do
   if Object.const_defined? :Errno
     eclass = Errno::ENOENT
   else
@@ -222,7 +230,7 @@ assert('IO.sysopen("./nonexistent")') do
   end
 end
 
-assert('IO.sysopen, IO#sysread') do
+assert_not_windows('IO.sysopen, IO#sysread') do
   fd = IO.sysopen $mrbtest_io_rfname
   io = IO.new fd
   str1 = "     "
@@ -246,7 +254,7 @@ assert('IO.sysopen, IO#sysread') do
   true
 end
 
-assert('IO.sysopen, IO#syswrite') do
+assert_not_windows('IO.sysopen, IO#syswrite') do
   fd = IO.sysopen $mrbtest_io_wfname, "w"
   io = IO.new fd, "w"
   str = "abcdefg"
@@ -261,7 +269,7 @@ assert('IO.sysopen, IO#syswrite') do
   true
 end
 
-assert('IO#_read_buf') do
+assert_not_windows('IO#_read_buf') do
   fd = IO.sysopen $mrbtest_io_rfname
   io = IO.new fd
   def io._buf
@@ -285,7 +293,7 @@ assert('IO#_read_buf') do
   io.closed?
 end
 
-assert('IO#isatty') do
+assert_not_windows('IO#isatty') do
   f1 = File.open("/dev/tty")
   f2 = File.open($mrbtest_io_rfname)
 
@@ -297,7 +305,7 @@ assert('IO#isatty') do
   true
 end
 
-assert('IO#pos=, IO#seek') do
+assert_not_windows('IO#pos=, IO#seek') do
   fd = IO.sysopen $mrbtest_io_rfname
   io = IO.new fd
   def io._buf
@@ -311,7 +319,7 @@ assert('IO#pos=, IO#seek') do
   io.closed?
 end
 
-assert('IO#rewind') do
+assert_not_windows('IO#rewind') do
   fd = IO.sysopen $mrbtest_io_rfname
   io = IO.new fd
   assert_equal 'm', io.getc
@@ -322,7 +330,7 @@ assert('IO#rewind') do
   io.closed?
 end
 
-assert('IO#gets') do
+assert_not_windows('IO#gets') do
   fd = IO.sysopen $mrbtest_io_rfname
   io = IO.new fd
 
@@ -371,7 +379,7 @@ assert('IO#gets') do
   io.closed?
 end
 
-assert('IO#gets - paragraph mode') do
+assert_not_windows('IO#gets - paragraph mode') do
   fd = IO.sysopen $mrbtest_io_wfname, "w"
   io = IO.new fd, "w"
   io.write "0" * 10 + "\n"
@@ -393,7 +401,7 @@ assert('IO#gets - paragraph mode') do
   io.closed?
 end
 
-assert('IO.popen') do
+assert_not_windows('IO.popen') do
   begin
     $? = nil
     io = IO.popen("echo mruby-io")
@@ -417,7 +425,7 @@ assert('IO.popen') do
   end
 end
 
-assert('IO.popen with in option') do
+assert_not_windows('IO.popen with in option') do
   begin
     IO.pipe do |r, w|
       w.write 'hello'
@@ -431,7 +439,7 @@ assert('IO.popen with in option') do
   end
 end
 
-assert('IO.popen with out option') do
+assert_not_windows('IO.popen with out option') do
   begin
     IO.pipe do |r, w|
       IO.popen("echo 'hello'", "w", out: w) {}
@@ -443,7 +451,7 @@ assert('IO.popen with out option') do
   end
 end
 
-assert('IO.popen with err option') do
+assert_not_windows('IO.popen with err option') do
   begin
     IO.pipe do |r, w|
       assert_equal "", IO.popen("echo 'hello' 1>&2", "r", err: w) { |i| i.read }
@@ -455,7 +463,7 @@ assert('IO.popen with err option') do
   end
 end
 
-assert('IO.read') do
+assert_not_windows('IO.read') do
   # empty file
   fd = IO.sysopen $mrbtest_io_wfname, "w"
   io = IO.new fd, "w"
@@ -478,7 +486,7 @@ assert('IO.read') do
   assert_equal nil,   IO.read($mrbtest_io_wfname, 1, 10)
 end
 
-assert('IO#fileno') do
+assert_not_windows('IO#fileno') do
   fd = IO.sysopen $mrbtest_io_rfname
   io = IO.new fd
   assert_equal io.fileno, fd
@@ -487,7 +495,7 @@ assert('IO#fileno') do
   io.closed?
 end
 
-assert('IO#close_on_exec') do
+assert_not_windows('IO#close_on_exec') do
   fd = IO.sysopen $mrbtest_io_wfname, "w"
   io = IO.new fd, "w"
   begin
@@ -526,7 +534,7 @@ assert('IO#close_on_exec') do
   end
 end
 
-assert('IO#sysseek') do
+assert_not_windows('IO#sysseek') do
   IO.open(IO.sysopen($mrbtest_io_rfname)) do |io|
     assert_equal 2, io.sysseek(2)
     assert_equal 5, io.sysseek(3, IO::SEEK_CUR) # 2 + 3 => 5
@@ -534,7 +542,7 @@ assert('IO#sysseek') do
   end
 end
 
-assert('IO.pipe') do
+assert_not_windows('IO.pipe') do
   begin
     called = false
     IO.pipe do |r, w|
@@ -574,7 +582,7 @@ assert('IO.pipe') do
   end
 end
 
-assert('`cmd`') do
+assert_not_windows('`cmd`') do
   begin
     assert_equal `echo foo`, "foo\n"
   rescue NotImplementedError => e
@@ -582,6 +590,6 @@ assert('`cmd`') do
   end
 end
 
-assert('IO TEST CLEANUP') do
+assert_not_windows('IO TEST CLEANUP') do
   assert_nil MRubyIOTestUtil.io_test_cleanup
 end

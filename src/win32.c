@@ -106,3 +106,43 @@ str_to_wstr(const char *utf8, int mlen)
 
     return utf16;
 }
+
+off_t
+lseek(int fd, mrb_int offset, mrb_int whence){
+  /**
+  * lseek is currently not defined under windows
+  */
+  return -1;
+}
+
+off_t
+close(int fd){
+  /**
+  * close is currently not defined under windows
+  */
+  return -1;
+}
+
+off_t
+isatty(int fd){
+  /**
+  * isatty is currently not defined under windows
+  */
+  return -1;
+}
+
+off_t
+read(int fd, char *buf, mrb_int whence){
+  /**
+  * read is currently not defined under windows
+  */
+  return -1;
+}
+
+off_t
+write(int fd, char *buf, mrb_int whence){
+  /**
+  * write is currently not defined under windows
+  */
+  return -1;
+}

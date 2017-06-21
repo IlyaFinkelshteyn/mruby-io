@@ -1,15 +1,3 @@
-#include <sys/types.h>
-#include <errno.h>
-
-#if defined(_WIN32) || defined(_WIN64)
-  #include <winsock.h>
-  #include <io.h>
-#else
-  #include <sys/socket.h>
-  #include <unistd.h>
-  #include <sys/un.h>
-#endif
-
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +7,26 @@
 #include "mruby/error.h"
 #include "mruby/string.h"
 #include "mruby/variable.h"
+
+#include <sys/types.h>
+#include <errno.h>
+
+
+
+
+
+
+
+#if defined(__APPLE__) || defined(__linux__)
+
+#if !defined(__APPLE__) && !defined(__linux__)
+  #include <winsock.h>
+  #include <io.h>
+#else
+  #include <sys/socket.h>
+  #include <unistd.h>
+  #include <sys/un.h>
+#endif
 
 static mrb_value
 mrb_io_test_io_setup(mrb_state *mrb, mrb_value self)
@@ -175,10 +183,11 @@ mrb_io_test_rmdir(mrb_state *mrb, mrb_value klass)
   }
   return mrb_true_value();
 }
-
+#endif
 void
 mrb_mruby_io_gem_test(mrb_state* mrb)
 {
+#if defined(__APPLE__) || defined(__linux__)
   struct RClass *io_test = mrb_define_module(mrb, "MRubyIOTestUtil");
   mrb_define_class_method(mrb, io_test, "io_test_setup", mrb_io_test_io_setup, MRB_ARGS_NONE());
   mrb_define_class_method(mrb, io_test, "io_test_cleanup", mrb_io_test_io_cleanup, MRB_ARGS_NONE());
@@ -188,4 +197,5 @@ mrb_mruby_io_gem_test(mrb_state* mrb)
 
   mrb_define_class_method(mrb, io_test, "mkdtemp", mrb_io_test_mkdtemp, MRB_ARGS_REQ(1));
   mrb_define_class_method(mrb, io_test, "rmdir", mrb_io_test_rmdir, MRB_ARGS_REQ(1));
+#endif
 }

@@ -118,7 +118,7 @@ mrb_execarg_fill(mrb_state *mrb, mrb_value env, mrb_value *argv, mrb_int argc, m
         eargp->fd.in  = eargp->fd.out = eargp->fd.err = mrb_nil_value();
     }
 
-#if defined(__APPLE__) || defined(__linux__)
+#if !defined(__APPLE__) && !defined(__linux__)
     use_cmd = (argc > 1 || !strrchr(tCmd, ' ')) ? 1 : 0;
 #else
     use_cmd = (argc > 1 || strstr(tCmd, ".exe")) ? 1 : 0;
@@ -135,7 +135,7 @@ mrb_execarg_fill(mrb_state *mrb, mrb_value env, mrb_value *argv, mrb_int argc, m
 
 
 
-    #if defined(__APPLE__) || defined(__linux__)
+    #if !defined(__APPLE__) && !defined(__linux__)
         shell = getenv("SHELL");
         // if (!shell) shell = strdup(dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf)));
         result[1] = strdup("-c");
@@ -150,7 +150,7 @@ mrb_execarg_fill(mrb_state *mrb, mrb_value env, mrb_value *argv, mrb_int argc, m
 
     result[argc] = NULL;
 
-#if defined(__APPLE__) || defined(__linux__)
+#if !defined(__APPLE__) && !defined(__linux__)
     if (result[0][0] != '/') {
         argv0 = mrb_str_new(mrb, "/bin/", 5); //TODO redundand?
     }
